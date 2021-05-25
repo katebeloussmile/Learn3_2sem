@@ -7,4 +7,6 @@ import java.util.Map;
 
 public interface ITextAnalyzer {
     Map<TextToken, List<String>> analyze(List<String> files);
+    void setFilesCount(Integer nFiles);
+    int getFilesProcessed();
 }

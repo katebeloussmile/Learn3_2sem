@@ -12,28 +12,36 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TokenSource implements ITokenSource {
     private String directory;
     private int nThreads;
+    private Integer nFiles;
     private final ITextAnalyzer textAnalyzer;
 
     public TokenSource(String directory, ITextAnalyzer textAnalyzer) {
-        this(directory, textAnalyzer, 1);
+        this(directory, textAnalyzer, 1, -1);
     }
 
-    public TokenSource(String directory, ITextAnalyzer textAnalyzer, int nThreads) {
+    public TokenSource(String directory, ITextAnalyzer textAnalyzer, int nThreads, Integer nFiles) {
         this.directory = directory;
         this.textAnalyzer = textAnalyzer;
         this.nThreads = nThreads;
+        this.nFiles = nFiles;
     }
 
     public void setDirectory(String directory) {
         this.directory = directory;
     }
 
-    public void setThreads(int threads) {
+    public void setThreadsCount(int threads) {
         this.nThreads = threads;
+    }
+
+    public void setFilesCount(Integer nFiles){
+        this.nFiles = nFiles;
+        this.textAnalyzer.setFilesCount(nFiles);
     }
 
     @Override
@@ -44,11 +52,18 @@ public class TokenSource implements ITokenSource {
         int fileCount = files.size();
         long pageSize = fileCount / nThreads;
         long pageCount = fileCount / pageSize;
+        AtomicInteger filesProcessed =  new AtomicInteger();
         ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
         CountDownLatch latch = new CountDownLatch((int) pageCount);
         ConcurrentHashMap<TextToken, List<String>> index = new ConcurrentHashMap<>();
 
         for (long i = 0; i < pageCount; i++) {
+            if(nFiles != null && filesProcessed.get() >= nFiles){
+                while(latch.getCount() != 0){
+                    latch.countDown();
+                }
+                break;
+            }
             List<String> paths = files.stream().skip(i * pageSize).limit(pageSize).toList();
             executorService.submit(() -> {
                 Map<TextToken, List<String>> partialIndex = textAnalyzer.analyze(paths);
@@ -59,6 +74,11 @@ public class TokenSource implements ITokenSource {
                         index.put(token, locations);
                     }
                 });
+                int oldValue, newValue;
+                do{
+                    oldValue = filesProcessed.get();
+                    newValue = oldValue + textAnalyzer.getFilesProcessed();
+                }while(!filesProcessed.compareAndSet(oldValue, newValue));
                 latch.countDown();
             });
         }

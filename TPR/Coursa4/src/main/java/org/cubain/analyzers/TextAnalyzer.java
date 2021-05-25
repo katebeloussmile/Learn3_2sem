@@ -9,15 +9,32 @@ import java.util.regex.Pattern;
 
 public class TextAnalyzer implements ITextAnalyzer {
     private final ITextReader textReader;
-
-    public TextAnalyzer(ITextReader textReader) {
+    private Integer nFiles;
+    private int filesProcessed;
+    public TextAnalyzer(ITextReader textReader, Integer nFiles){
         this.textReader = textReader;
+        this.nFiles = nFiles;
+    }
+    public TextAnalyzer(ITextReader textReader) {
+        this(textReader, null);
+    }
+
+    public void setFilesCount(Integer nFiles){
+        this.nFiles = nFiles;
+    }
+
+    public int getFilesProcessed(){
+        return this.filesProcessed;
     }
 
     @Override
     public Map<TextToken, List<String>> analyze(List<String> files) {
+        this.filesProcessed = 0;
         Map<TextToken, List<String>> occurrences = new HashMap<>();
         for (String file : files) {
+            if(nFiles != null && filesProcessed >= nFiles)
+                return occurrences;
+            ++filesProcessed;
             String text = String.join("", textReader.readAllLines(file));
             List<TextToken> words = tokenize(text);
             for (TextToken word : words) {
