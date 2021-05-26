@@ -22,7 +22,7 @@ public class IndexTests {
     private final String testDirectory = "src/test/resources";
     private final Map<TextToken, List<String>> validIndex =
             Map.of(
-                    new TextToken("a"), List.of("1.txt", "2.txt"),
+                    new TextToken("abc"), List.of("1.txt", "2.txt"),
                     new TextToken("b"), Collections.singletonList("2.txt"),
                     new TextToken("c"), Collections.singletonList("3.txt"),
                     new TextToken("d"), Collections.singletonList("4.txt")
@@ -44,7 +44,7 @@ public class IndexTests {
             List<String> expected = validIndex.get(pair.getKey());
             List<String> actual = pair.getValue();
             expected.forEach(s -> {
-                assertTrue(actual.contains(s));
+                assertTrue(actual.stream().anyMatch(x -> x.endsWith(s)));
             });
         });
     }
@@ -58,7 +58,7 @@ public class IndexTests {
             List<String> expected = validIndex.get(pair.getKey());
             List<String> actual = pair.getValue();
             expected.forEach(s -> {
-                assertTrue(actual.contains(s));
+                assertTrue(actual.stream().anyMatch(x -> x.endsWith(s)));
             });
         });
     }

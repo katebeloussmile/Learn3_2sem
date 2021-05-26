@@ -1,6 +1,7 @@
 package org.cubain.tokensources;
 
 import org.cubain.analyzers.ITextAnalyzer;
+import org.cubain.objects.IndexEntry;
 import org.cubain.objects.TextToken;
 
 import java.io.File;
@@ -19,7 +20,7 @@ public class TokenSource implements ITokenSource {
     private int nThreads;
     private Integer nFiles;
     private final ITextAnalyzer textAnalyzer;
-
+    private Map<TextToken, List<String>> index;
     public TokenSource(String directory, ITextAnalyzer textAnalyzer) {
         this(directory, textAnalyzer, 1, null);
     }
@@ -67,14 +68,19 @@ public class TokenSource implements ITokenSource {
                 }
                 break;
             }
+            if(nFiles != null){
+                pageSize = pageSize > nFiles ? nFiles : pageSize;
+            }
             List<String> paths = files.stream().skip(i * pageSize).limit(pageSize).toList();
             executorService.submit(() -> {
                 Map<TextToken, List<String>> partialIndex = textAnalyzer.analyze(paths);
                 partialIndex.forEach((token, locations) -> {
-                    if (index.containsKey(token)) {
-                        index.get(token).addAll(locations);
-                    } else {
-                        index.put(token, locations);
+                    synchronized (this){
+                        if (index.containsKey(token)) {
+                            index.get(token).addAll(locations);
+                        } else {
+                            index.put(token, locations);
+                        }
                     }
                 });
                 int oldValue, newValue;
@@ -90,7 +96,15 @@ public class TokenSource implements ITokenSource {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        this.index = index;
         return index;
+    }
+
+    @Override
+    public IndexEntry getEntry(String token) {
+        TextToken textToken = new TextToken(token);
+        List<String> fileEntries = this.index.get(textToken);
+        return new IndexEntry(textToken, fileEntries);
     }
 
     private void traverseDirectories(String root, List<String> filenames) {
