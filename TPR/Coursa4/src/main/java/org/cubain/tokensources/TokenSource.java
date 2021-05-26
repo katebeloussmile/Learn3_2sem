@@ -21,7 +21,7 @@ public class TokenSource implements ITokenSource {
     private final ITextAnalyzer textAnalyzer;
 
     public TokenSource(String directory, ITextAnalyzer textAnalyzer) {
-        this(directory, textAnalyzer, 1, -1);
+        this(directory, textAnalyzer, 1, null);
     }
 
     public TokenSource(String directory, ITextAnalyzer textAnalyzer, int nThreads, Integer nFiles) {
@@ -58,7 +58,7 @@ public class TokenSource implements ITokenSource {
         ConcurrentHashMap<TextToken, List<String>> index = new ConcurrentHashMap<>();
 
         for (long i = 0; i < pageCount; i++) {
-            if(nFiles != null && filesProcessed.get() >= nFiles){
+            if(nFiles != null && nFiles > 0 && filesProcessed.get() >= nFiles){
                 while(latch.getCount() != 0){
                     latch.countDown();
                 }
