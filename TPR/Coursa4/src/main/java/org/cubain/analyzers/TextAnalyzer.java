@@ -49,7 +49,7 @@ public class TextAnalyzer implements ITextAnalyzer {
     }
 
     private List<TextToken> tokenize(String text) {
-        String regex = "(?=\\S*['-]*)([a-zA-Z'-]+)";
+        String regex = "\b(?=\\S*['-]*)([a-zA-Z'-]+)\b";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(text);
         Map<TextToken, Object> tokens = new HashMap<>();

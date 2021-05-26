@@ -51,6 +51,9 @@ public class TokenSource implements ITokenSource {
 
         int fileCount = files.size();
         long pageSize = fileCount / nThreads;
+        if(pageSize == 0){
+            pageSize = fileCount;
+        }
         long pageCount = fileCount / pageSize;
         AtomicInteger filesProcessed =  new AtomicInteger();
         ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
